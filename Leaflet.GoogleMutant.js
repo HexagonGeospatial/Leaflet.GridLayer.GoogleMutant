@@ -460,9 +460,7 @@ L.GridLayer.GoogleMutant = L.GridLayer.extend({
 		if (!this._mutant) return;
 
 		//give time for animations to finish before checking it tile should be pruned
-		setTimeout(this._pruneTile.bind(this, key), 1000);
-
-		return L.GridLayer.prototype._removeTile.call(this, key);
+		setTimeout(this._pruneTile.bind(this, key), 10000);
 	},
 
 	_getLargeGMapBound: function (googleBounds) {
@@ -491,11 +489,15 @@ L.GridLayer.GoogleMutant = L.GridLayer.extend({
 		for (var i=0; i<this._imagesPerTile; ++i) {
 			var key2 = key + '/' + i;
 			if (key2 in this._freshTiles) {
-				var tileBounds = this._map && this._keyToBounds(key),
-				    stillVisible = this._map && tileBounds.overlaps(gMapBounds) && (parseFloat(tileZoom) === gZoom); // @utilmind: TileZoom is string, gZoom is number.
+				var tileBounds = this._map && this._keyToBounds(key);
+				var stillVisible = this._map && tileBounds.overlaps(gMapBounds) && (tileZoom === gZoom);
 
-				if (!stillVisible) delete this._freshTiles[key2];
-//                              console.log('Prunning of ', key, (!stillVisible))
+				if (!stillVisible) {
+                    delete this._freshTiles[key2];
+                    L.GridLayer.prototype._removeTile.call(this, key);
+                }
+
+                // console.log('Prunning of ', key, (!stillVisible))
 			}
 		}
 	}
