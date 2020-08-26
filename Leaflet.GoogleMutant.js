@@ -8,6 +8,28 @@
 // Based on https://github.com/shramov/leaflet-plugins
 // GridLayer like https://avinmathew.com/leaflet-and-google-maps/ , but using MutationObserver instead of jQuery
 
+function getGAPIPromise() {
+	var ready = !!window.google && !!window.google.maps && !!window.google.maps.Map;
+
+	window.__GAPIPromise = window.__GAPIPromise || (ready ? Promise.resolve(window.google) : new Promise(function (resolve, reject) {
+		var checkCounter = 0,
+				intervalId = null;
+
+		intervalId = setInterval(function () {
+			if (checkCounter >= 10) {
+				clearInterval(intervalId);
+				return reject(new Error('window.google not found after 10 attempts'));
+			}
+			if (!!window.google && !!window.google.maps && !!window.google.maps.Map) {
+				clearInterval(intervalId);
+				return resolve(window.google);
+			}
+			++checkCounter;
+		}, 500);
+	}));
+
+	return window.__GAPIPromise;
+}
 
 // 🍂class GridLayer.GoogleMutant
 // 🍂extends GridLayer
@@ -30,26 +52,10 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 
 	initialize: function (options) {
 		L.GridLayer.prototype.initialize.call(this, options);
+	},
 
-		this._ready = !!window.google && !!window.google.maps && !!window.google.maps.Map;
+	onAdd: function (map) {
 		this._isMounted = true;
-
-		this._GAPIPromise = this._ready ? Promise.resolve(window.google) : new Promise(function (resolve, reject) {
-			var checkCounter = 0,
-			    intervalId = null;
-
-			intervalId = setInterval(function () {
-				if (checkCounter >= 10) {
-					clearInterval(intervalId);
-					return reject(new Error('window.google not found after 10 attempts'));
-				}
-				if (!!window.google && !!window.google.maps && !!window.google.maps.Map) {
-					clearInterval(intervalId);
-					return resolve(window.google);
-				}
-				++checkCounter;
-			}, 500);
-		});
 
 		this.once('spawned', function () {
 			if (this._subLayers) {
@@ -67,17 +73,14 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 		this._imagesPerTile = (this.options.type === 'hybrid') ? 2 : 1;
 
 		this._boundOnMutatedImage = this._onMutatedImage.bind(this);
-	},
 
-	onAdd: function (map) {
 		L.GridLayer.prototype.onAdd.call(this, map);
 		this._initMutantContainer();
 
-		this._GAPIPromise.then(function () {
+		getGAPIPromise().then(function () {
 			if (!this._isMounted) {
 				return;
 			}
-			this._ready = true;
 
 			this._initMutant();
 
@@ -133,7 +136,7 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 	// `options`: see https://developers.google.com/maps/documentation/javascript/reference/map
 	addGoogleLayer: function (googleLayerName, options) {
 		if (!this._subLayers) this._subLayers = {};
-		this._GAPIPromise.then(function () {
+		getGAPIPromise().then(function () {
 			var Constructor = google.maps[googleLayerName];
 			var googleLayer = new Constructor(options);
 			if (this._mutant) { googleLayer.setMap(this._mutant); } // otherwise it will be added on 'spawned'
@@ -145,7 +148,7 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 	// @method removeGoogleLayer(name: String): this
 	// Removes layer with the given name from the google Map instance.
 	removeGoogleLayer: function (googleLayerName) {
-		this._GAPIPromise.then(function () {
+		getGAPIPromise().then(function () {
 			var googleLayer = this._subLayers && this._subLayers[googleLayerName];
 			if (googleLayer) {
 				googleLayer.setMap(null);
