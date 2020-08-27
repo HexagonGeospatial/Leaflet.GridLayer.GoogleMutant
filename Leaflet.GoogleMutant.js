@@ -470,7 +470,9 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 		if (!this._mutant) return;
 
 		//give time for animations to finish before checking it tile should be pruned
-		setTimeout(this._pruneTile.bind(this, key), 10000);
+		setTimeout(this._pruneTile.bind(this, key), 1000);
+		
+        L.GridLayer.prototype._removeTile.call(this, key);
 	},
 
 	_getLargeGMapBound: function (googleBounds) {
@@ -504,7 +506,6 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 
 				if (!stillVisible) {
                     delete this._freshTiles[key2];
-                    L.GridLayer.prototype._removeTile.call(this, key);
                 }
 
                 // console.log('Prunning of ', key, (!stillVisible))
