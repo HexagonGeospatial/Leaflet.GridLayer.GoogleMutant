@@ -489,14 +489,14 @@ var GoogleMutant = L.GridLayer.GoogleMutant = L.GridLayer.extend({
 	},
 
 	_pruneTile: function (key) {
-		var gZoom = this._mutant.getZoom(),
-		    tileZoom = key.split(':')[2],
-		    googleBounds = this._mutant.getBounds(),
-		    gMapBounds = this._getLargeGMapBound(googleBounds);
-
+		var googleBounds = this._mutant.getBounds();
 		if (!googleBounds) {
 			return;
 		}
+
+		var gZoom = this._mutant.getZoom(),
+		    tileZoom = key.split(':')[2],
+		    gMapBounds = this._getLargeGMapBound(googleBounds);
 
 		for (var i=0; i<this._imagesPerTile; ++i) {
 			var key2 = key + '/' + i;
